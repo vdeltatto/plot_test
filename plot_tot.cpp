@@ -1,4 +1,6 @@
 /*
+Plot of 'kinetic_variable' distributions for cW = 0.1, 0.3, 1 (with data stored in ntuples)
+
 c++ -o plot_tot plot_tot.cpp `root-config --glibs --cflags`
 */
 
@@ -15,6 +17,8 @@ c++ -o plot_tot plot_tot.cpp `root-config --glibs --cflags`
 #include <TCanvas.h>
 #include <TStyle.h>
 #include <TLegend.h>
+#include <THStack.h>
+#include <TText.h>
 
 using namespace std ;
 
@@ -32,14 +36,32 @@ int main (int argc, char** argv)
 		
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
+	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1200,400); 
+	TCanvas* zoom = new TCanvas("zoom","zoom",0,0, 700, 500);
+	
 	cnv->Divide(3,1);
+	cnv_logy->Divide(3,1);
 
 	string wilson_values[] = {"0p1","0p3","1"};
 	string titles[] = {"cW = 0.1", "cW = 0.3", "cW = 1"};
 	string words[] = {"ntuple_RcW_",".root","SSeu_RcW_bsm_","SSeu_RcW_int_","_nums"};
+	string name_histograms[] = {"SM", "BSM", "interference"};
+	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
 	
 	vector<TH1F*> histos;
-	float min_tot, max_tot, bin_width;
+	vector<TH1F*> histos_zoom; //to zoom the critical part of mjj distributon (cW = 1)
+	
+	float max_tot[3];
+	float maxima[][5] = {{1000, 7000, 1500, 1000, 400},{1000, 7000, 1500, 1000, 400},
+		{1500, 7000, 3500, 2300, 1200}}; //maxima in the histograms
+	for (int i = 0; i < 5; i++) 	
+	{
+		if (kinetic_variable == kinetic_variables[i])
+		{
+			for (int n = 0; n < 3; n++) max_tot[n] = maxima[n][i];	
+			break;
+		}
+	}	
 	
 	for (int k = 0; k < 3; k++) // k = 0,1,2: cW = 0.1, 0.3, 1.
 	{
@@ -52,6 +74,9 @@ int main (int argc, char** argv)
 
 		vector<float> values[3]; // to contain data of SM simulation, BSM (quadratic term), BSM (interference term)
 		vector<float> weights[3];
+		THStack* h_stack = new THStack("hs","");
+		THStack* h_stack_zoom = new THStack("hs_zoom","");
+		
 		
 		for (int j = 0; j < 3; j++) // j = 0,1,2: SM simulation, BSM (quadratic term), BSM (interference term)
 		{
@@ -66,33 +91,10 @@ int main (int argc, char** argv)
 				weights[j].push_back(*var2);
 			}		
 			
-			float min = *min_element(values[j].begin(), values[j].end());
-			float max = *max_element(values[j].begin(), values[j].end());
-			if (j == 0)
-			{
-				min_tot = min; 
-				max_tot = max;
-			}
-			if (min < min_tot) min_tot = min;
-			if (max > max_tot) max_tot = max;	
-
-			myfile->Close();
-		}
-		for (int j = 0; j < 3; j++) // j = 0,1,2: SM simulation, BSM (quadratic term), BSM (interference term)
-		{
-			TFile* myfile = new TFile(name_files[j].c_str());
-			int Nbins = 100;
+			int Nbins = 70;
 			
-			if (k == 0 && j == 0) 
-			{
-				bin_width = (max_tot - min_tot)/Nbins;
-			}
-			else if (k == 1 || k == 2)
-			{
-				Nbins = floor((max_tot - min_tot)/bin_width);
-			}
-
-			TH1F* histo = new TH1F ("histo", "histo", Nbins, min_tot, max_tot);
+			TH1F* histo = new TH1F ("histo", name_histograms[j].c_str(), Nbins, 0., max_tot[k]);
+			TH1F* histo_zoom = new TH1F ("histo_zoom", name_histograms[j].c_str(), 200, 40, 100);			
 				
 			TH1F* global_numbers = (TH1F*) myfile->Get(name_global_numbers[j].c_str()) ;
 			float cross_section = global_numbers->GetBinContent(1);
@@ -104,42 +106,117 @@ int main (int argc, char** argv)
 			for (int i = 0; i < values[j].size(); i++) 
 			{
 				histo->Fill(values[j][i],weights[j][i]);
+				if (k == 2 && kinetic_variable == kinetic_variables[1])
+				{
+					histo_zoom->Fill(values[j][i],weights[j][i]);
+				}
 			}
 
 			histo->Scale(normalization);
-			
 			histos.push_back(histo);	
+
+			if (k == 2 && kinetic_variable == kinetic_variables[1]) //cW = 1, mjj
+			{
+				histo_zoom->Scale(normalization);
+				histos_zoom.push_back(histo_zoom);	
+			}	 
 
 			values[j].clear();
 			weights[j].clear();	
 		}
 
+		histos[0]->SetLineColor(kBlue);
+		histos[1]->SetLineColor(kRed);
+		histos[2]->SetLineColor(kGreen +1);
+		
+		for (int i = 0; i < 3; i++)
+		{
+			h_stack->Add(histos[i]);
+		}
+	
 		TH1F* histo_sum = new TH1F(*histos[0]);
-		histo_sum->Add(histos[1]); 
+		histo_sum->Add(histos[1]);
 		histo_sum->Add(histos[2]);
-		histo_sum->SetTitle(titles[k].c_str());
-		histo_sum->SetName(kinetic_variable);
+		histo_sum->SetTitle("SM + BSM + interference");
+		histo_sum->SetLineColor(kBlack);
+		histo_sum->SetLineWidth(2);
+		h_stack->Add(histo_sum);
 		
 		cnv->cd(k+1);
 		
-		histo_sum->Draw("HIST");
-		histo_sum->GetXaxis()->SetTitle(kinetic_variable);
-		histo_sum->GetYaxis()->SetTitle("# events");
-		histos[0]->Draw("HIST SAME");
-		histo_sum->SetLineColor(kRed);
-		histo_sum->SetLineWidth(2.);
-		TLegend *legend = new TLegend(0.2,0.8,0.65,0.9); 			
-		legend->AddEntry("histo","SM","l");
-		legend->AddEntry(kinetic_variable,"SM + BSM + interference","l");
-		legend->SetTextFont(42);
-	    	legend->SetTextSize(0.03);
-		legend->Draw();
+		h_stack->Draw("HIST NOSTACK");
+		TText* T = new TText(); 
+		T->SetTextFont(42); 
+		T->SetTextAlign(21);
+		T->DrawTextNDC(.5,.95,titles[k].c_str());
+		h_stack->GetXaxis()->SetTitle(kinetic_variable);
+		h_stack->GetYaxis()->SetTitle("# events"); 
+		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
 
 		cnv->Modified();
 		cnv->Update();	
 
-		histos.clear();
+		cnv_logy->cd(k+1); //logarithmic plot
+		
+		h_stack->Draw("HIST NOSTACK");
+		TText* T_logy = new TText(); 
+		T_logy->SetTextFont(42); 
+		T_logy->SetTextAlign(21);
+		string title = titles[k] + " (logarithmic scale)";
+		T_logy->DrawTextNDC(.5,.95,title.c_str());
+		h_stack->GetXaxis()->SetTitle(kinetic_variable);
+		h_stack->GetYaxis()->SetTitle("# events"); 
+		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
+		gPad->SetLogy();
+
+		cnv_logy->Modified();
+		cnv_logy->Update();	
+
+		histos.clear();		
+	
+		if (k == 2 && kinetic_variable == kinetic_variables[1]) // zoom in the range with singularity
+		{						 	// for cW = 1
+			histos_zoom[0]->SetLineColor(kBlue);
+			histos_zoom[1]->SetLineColor(kRed);
+			histos_zoom[2]->SetLineColor(kGreen +1);
+			
+			for (int i = 0; i < 3; i++)
+			{
+				h_stack_zoom->Add(histos_zoom[i]);
+			}
+			TH1F* histo_sum_zoom = new TH1F(*histos_zoom[0]);
+			histo_sum_zoom->Add(histos_zoom[1]); 
+			histo_sum_zoom->Add(histos_zoom[2]);
+			histo_sum_zoom->SetTitle("SM + BSM + interference");
+			histo_sum_zoom->SetLineColor(kBlack);
+			histo_sum_zoom->SetLineWidth(2);
+			h_stack_zoom->Add(histo_sum_zoom);			
+			
+			zoom->cd();
+		
+			h_stack_zoom->Draw("HIST NOSTACK");
+			TText* T_logy = new TText(); 
+			T_logy->SetTextFont(42); 
+			T_logy->SetTextAlign(21);
+			T_logy->DrawTextNDC(.5,.95,"zoom for cW = 1 (mjj distribution)");
+			h_stack_zoom->GetXaxis()->SetTitle(kinetic_variable);
+			h_stack_zoom->GetYaxis()->SetTitle("# events"); 
+			gPad->BuildLegend(0.10,0.70,0.60,0.90,"");
+
+			zoom->Modified();
+			zoom->Update();	
+		}
+		else if (k == 2)
+		{
+			zoom->Close();
+		}
 	}
+	//To save the plots
+	/*string name_png = string(kinetic_variable) + ".png";
+	string name_logy_png = string(kinetic_variable) + "_log.png";
+	cnv->Print(name_png.c_str(), "png");
+	cnv_logy->Print(name_logy_png.c_str(), "png");
+	if (kinetic_variable == kinetic_variables[1]) zoom->Print("zoom_mjj.png","png");*/
 
 	myapp->Run();
 
