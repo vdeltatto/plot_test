@@ -37,7 +37,7 @@ int main (int argc, char** argv)
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
 	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1200,400); 
-	TCanvas* zoom = new TCanvas("zoom","zoom",0,0, 700, 500);
+	TCanvas* zoom = new TCanvas("zoom","zoom",0,0, 1000, 500);
 	
 	cnv->Divide(3,1);
 	cnv_logy->Divide(3,1);
@@ -94,7 +94,7 @@ int main (int argc, char** argv)
 			int Nbins = 70;
 			
 			TH1F* histo = new TH1F ("histo", name_histograms[j].c_str(), Nbins, 0., max_tot[k]);
-			TH1F* histo_zoom = new TH1F ("histo_zoom", name_histograms[j].c_str(), 200, 40, 100);			
+			TH1F* histo_zoom = new TH1F ("histo_zoom", name_histograms[j].c_str(), 100, 70, 90);			
 				
 			TH1F* global_numbers = (TH1F*) myfile->Get(name_global_numbers[j].c_str()) ;
 			float cross_section = global_numbers->GetBinContent(1);
@@ -139,7 +139,7 @@ int main (int argc, char** argv)
 		histo_sum->Add(histos[2]);
 		histo_sum->SetTitle("SM + BSM + interference");
 		histo_sum->SetLineColor(kBlack);
-		histo_sum->SetLineWidth(2);
+		//histo_sum->SetLineWidth(2);
 		h_stack->Add(histo_sum);
 		
 		cnv->cd(k+1);
@@ -176,35 +176,48 @@ int main (int argc, char** argv)
 	
 		if (k == 2 && kinetic_variable == kinetic_variables[1]) // zoom in the range with singularity
 		{						 	// for cW = 1
-			histos_zoom[0]->SetLineColor(kBlue);
-			histos_zoom[1]->SetLineColor(kRed);
-			histos_zoom[2]->SetLineColor(kGreen +1);
+			int color_SM  = kGreen - 8 ;
+			int color_INT = kOrange - 4 ;
+			int color_BSM = kAzure - 9 ;
+
+			histos_zoom[0]->SetFillColor(color_SM);
+			histos_zoom[1]->SetFillColor(color_INT);
+			histos_zoom[2]->SetFillColor(color_BSM);
 			
 			for (int i = 0; i < 3; i++)
 			{
 				h_stack_zoom->Add(histos_zoom[i]);
 			}
-			TH1F* histo_sum_zoom = new TH1F(*histos_zoom[0]);
-			histo_sum_zoom->Add(histos_zoom[1]); 
-			histo_sum_zoom->Add(histos_zoom[2]);
-			histo_sum_zoom->SetTitle("SM + BSM + interference");
-			histo_sum_zoom->SetLineColor(kBlack);
-			histo_sum_zoom->SetLineWidth(2);
-			h_stack_zoom->Add(histo_sum_zoom);			
 			
-			zoom->cd();
+			zoom->Divide(2,1);
+			zoom->cd(1);
 		
+			h_stack_zoom->Draw("HIST NOSTACK");
+			TText* T = new TText(); 
+			T->SetTextFont(42); 
+			T->SetTextAlign(21);
+			T->DrawTextNDC(.5,.95,"zoom for cW = 1");
+			h_stack_zoom->GetXaxis()->SetTitle(kinetic_variable);
+			h_stack_zoom->GetYaxis()->SetTitle("# events"); 
+			gPad->BuildLegend(0.10,0.76,0.4,0.90,"");
+
+			zoom->Modified();
+			zoom->Update();	
+
+			zoom->cd(2);			
 			h_stack_zoom->Draw("HIST NOSTACK");
 			TText* T_logy = new TText(); 
 			T_logy->SetTextFont(42); 
 			T_logy->SetTextAlign(21);
-			T_logy->DrawTextNDC(.5,.95,"zoom for cW = 1 (mjj distribution)");
+			T_logy->DrawTextNDC(.5,.95,"zoom for cW = 1 (log scale)");
 			h_stack_zoom->GetXaxis()->SetTitle(kinetic_variable);
 			h_stack_zoom->GetYaxis()->SetTitle("# events"); 
-			gPad->BuildLegend(0.10,0.70,0.60,0.90,"");
+			gPad->BuildLegend(0.10,0.76,0.4,0.90,"");
+			gPad->SetLogy();
 
 			zoom->Modified();
 			zoom->Update();	
+
 		}
 		else if (k == 2)
 		{
@@ -212,11 +225,11 @@ int main (int argc, char** argv)
 		}
 	}
 	//To save the plots
-	/*string name_png = string(kinetic_variable) + ".png";
+	string name_png = string(kinetic_variable) + ".png";
 	string name_logy_png = string(kinetic_variable) + "_log.png";
 	cnv->Print(name_png.c_str(), "png");
 	cnv_logy->Print(name_logy_png.c_str(), "png");
-	if (kinetic_variable == kinetic_variables[1]) zoom->Print("zoom_mjj.png","png");*/
+	if (kinetic_variable == kinetic_variables[1]) zoom->Print("zoom_mjj.png","png");
 
 	myapp->Run();
 

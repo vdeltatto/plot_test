@@ -127,7 +127,7 @@ int main (int argc, char** argv)
 		histo_sum->Add(histos[2]);
 		histo_sum->SetTitle("SM + BSM + interference");
 		histo_sum->SetLineColor(kBlack);
-		histo_sum->SetLineWidth(2);
+		//histo_sum->SetLineWidth(2);
 		h_stack->Add(histo_sum);
 		
 		cnv->cd(k+1);
