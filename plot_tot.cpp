@@ -1,5 +1,5 @@
 /*
-Plot of 'kinetic_variable' distributions for cW = 0.1, 0.3, 1 (with data stored in ntuples)
+Plot of 'kinetic_variable' distributions for cW = 0.05, 0.1, 0.3, 0.4, 1 (with data stored in ntuples)
 
 c++ -o plot_tot plot_tot.cpp `root-config --glibs --cflags`
 */
@@ -36,14 +36,18 @@ int main (int argc, char** argv)
 		
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
-	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1200,400); 
+	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1200,400);
+	TCanvas* cnv2 = new TCanvas("cnv2","cnv2",0,0,1000,400);
+	TCanvas* cnv2_logy = new TCanvas("cnv2_logy","cnv2_logy",0,450,1000,400);
 	TCanvas* zoom = new TCanvas("zoom","zoom",0,0, 1000, 500);
-	
+
 	cnv->Divide(3,1);
 	cnv_logy->Divide(3,1);
+	cnv2->Divide(2,1);
+	cnv2_logy->Divide(2,1);
 
-	string wilson_values[] = {"0p1","0p3","1"};
-	string titles[] = {"cW = 0.1", "cW = 0.3", "cW = 1"};
+	string wilson_values[] = {"0p05","0p1","0p3","0p4","1"};
+	string titles[] = {"cW = 0.05", "cW = 0.1", "cW = 0.3","cW = 0.4", "cW = 1"};
 	string words[] = {"ntuple_RcW_",".root","SSeu_RcW_bsm_","SSeu_RcW_int_","_nums"};
 	string name_histograms[] = {"SM", "BSM", "interference"};
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
@@ -51,19 +55,20 @@ int main (int argc, char** argv)
 	vector<TH1F*> histos;
 	vector<TH1F*> histos_zoom; //to zoom the critical part of mjj distributon (cW = 1)
 	
-	float max_tot[3];
-	float maxima[][5] = {{1000, 7000, 1500, 1000, 400},{1000, 7000, 1500, 1000, 400},
-		{1500, 7000, 3500, 2300, 1200}}; //maxima in the histograms
+	float max_tot[5];
+	float maxima[][5] = {{700, 6000, 900, 600, 250},{700, 6000, 900, 600, 250},
+		{800, 6000, 1500, 1000, 400},{1000, 6000, 1750, 1300, 500},
+		{1500, 6000, 3000, 1900, 1000}}; //maxima in the histograms
 	for (int i = 0; i < 5; i++) 	
 	{
 		if (kinetic_variable == kinetic_variables[i])
 		{
-			for (int n = 0; n < 3; n++) max_tot[n] = maxima[n][i];	
+			for (int n = 0; n < 5; n++) max_tot[n] = maxima[n][i];	
 			break;
 		}
 	}	
 	
-	for (int k = 0; k < 3; k++) // k = 0,1,2: cW = 0.1, 0.3, 1.
+	for (int k = 0; k < 5; k++) // cW = 0.05, 0.1, 0.3, 0.4, 1.
 	{
 		string name_files[] = {"ntuple_SMlimit.root", words[0] + wilson_values[k] + words[1],
 			words[0] + wilson_values[k] + words[1]};
@@ -142,7 +147,8 @@ int main (int argc, char** argv)
 		//histo_sum->SetLineWidth(2);
 		h_stack->Add(histo_sum);
 		
-		cnv->cd(k+1);
+		if (k < 3) cnv->cd(k+1);
+		else cnv2->cd(k-2);
 		
 		h_stack->Draw("HIST NOSTACK");
 		TText* T = new TText(); 
@@ -153,10 +159,22 @@ int main (int argc, char** argv)
 		h_stack->GetYaxis()->SetTitle("# events"); 
 		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
 
-		cnv->Modified();
-		cnv->Update();	
+		/*cnv->Modified();
+		cnv->Update();*/
+		
+		if (k < 3) 
+		{
+			cnv->Modified();
+			cnv->Update();
+		}
+		else	
+		{
+			cnv2->Modified();
+			cnv2->Update();
+		}
 
-		cnv_logy->cd(k+1); //logarithmic plot
+		if (k < 3) cnv_logy->cd(k+1); //logarithmic plot
+		else cnv2_logy->cd(k-2);
 		
 		h_stack->Draw("HIST NOSTACK");
 		TText* T_logy = new TText(); 
@@ -170,11 +188,22 @@ int main (int argc, char** argv)
 		gPad->SetLogy();
 
 		cnv_logy->Modified();
-		cnv_logy->Update();	
-
+		cnv_logy->Update();
+	
+		if (k < 3) 
+		{
+			cnv_logy->Modified();
+			cnv_logy->Update();
+		}
+		else	
+		{
+			cnv2_logy->Modified();
+			cnv2_logy->Update();
+		}
+			
 		histos.clear();		
 	
-		if (k == 2 && kinetic_variable == kinetic_variables[1]) // zoom in the range with singularity
+		if (k == 4 && kinetic_variable == kinetic_variables[1]) // zoom in the range with singularity
 		{						 	// for cW = 1
 			int color_SM  = kGreen - 8 ;
 			int color_INT = kOrange - 4 ;
@@ -219,16 +248,20 @@ int main (int argc, char** argv)
 			zoom->Update();	
 
 		}
-		else if (k == 2)
+		else if (k == 4)
 		{
 			zoom->Close();
 		}
 	}
 	//To save the plots
-	string name_png = string(kinetic_variable) + ".png";
-	string name_logy_png = string(kinetic_variable) + "_log.png";
-	cnv->Print(name_png.c_str(), "png");
-	cnv_logy->Print(name_logy_png.c_str(), "png");
+	string name1_png = string(kinetic_variable) + "_1.png";
+	string name1_logy_png = string(kinetic_variable) + "_1_log.png";
+	string name2_png = string(kinetic_variable) + "_2.png";
+	string name2_logy_png = string(kinetic_variable) + "_2_log.png";
+	cnv->Print(name1_png.c_str(), "png");
+	cnv_logy->Print(name1_logy_png.c_str(), "png");
+	cnv2->Print(name2_png.c_str(), "png");
+	cnv2_logy->Print(name2_logy_png.c_str(), "png");
 	if (kinetic_variable == kinetic_variables[1]) zoom->Print("zoom_mjj.png","png");
 
 	myapp->Run();

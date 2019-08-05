@@ -32,10 +32,13 @@ int main (int argc, char** argv)
 		
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1000,400);
+	TCanvas* cnv2 = new TCanvas("cnv2","cnv2",0,450,1000,400);
 	cnv->Divide(2,1);
+	cnv2->Divide(2,1);
 
-	string wilson_values[] = {"0p1","0p3","1"};
-	string titles[] = {"cW = 0.1", "cW = 0.3 (data - expected_values_from_scaling_relations)", 
+	string wilson_values[] = {"0p05","0p1","0p3","0p4","1"};
+	string titles[] = {"cW = 0.05", "cW = 0.1 (data - expected_values_from_scaling_relations)", 
+		"cW = 0.3 (data - expected_values_from_scaling_relations)", "cW = 0.4 (data - expected_values_from_scaling_relations)",
 		"cW = 1 (data - expected_values_from_scaling_relations)"};
 	string words[] = {"ntuple_RcW_",".root","SSeu_RcW_bsm_","SSeu_RcW_int_","_nums"};
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
@@ -52,7 +55,7 @@ int main (int argc, char** argv)
 		}
 	}	
 
-	for (int k = 0; k < 3; k++) // cW = 0.1, cW = 0.3, cW = 1
+	for (int k = 0; k < 5; k++) // cW = 0.05, 0.1, 0.3, 0.4, 1. 
 	{
 		string name_files[] = {"ntuple_SMlimit.root", words[0] + wilson_values[k] + words[1],
 			words[0] + wilson_values[k] + words[1]};
@@ -65,8 +68,7 @@ int main (int argc, char** argv)
 		
 		
 		for (int j = 0; j < 3; j++) // j = 0,1,2: SM simulation, BSM (quadratic term), BSM (interference term)
-		{
-			
+		{			
 			TFile* myfile = new TFile(name_files[j].c_str());
 			TTreeReader reader (name_ntuples[j].c_str(), myfile);
 			TTreeReaderValue<float> var1 (reader, kinetic_variable);
@@ -103,19 +105,28 @@ int main (int argc, char** argv)
 			weights.clear();
 		}
 
-		if (k == 1 || k == 2) 
+		if (k > 0) 
 		{
 			if (k == 1)
 			{
-				histos_analitic[1]->Scale(0.3*0.3/(0.1*0.1)); // quadratic scaling relation (pure BSM term)
-				histos_analitic[2]->Scale(0.3/0.1);           // linear scaling relation (interference term)
+				histos_analitic[1]->Scale(0.1*0.1/(0.05*0.05)); // quadratic scaling relation (pure BSM term)
+				histos_analitic[2]->Scale(0.1/0.05);           // linear scaling relation (interference term)
 			}
 			else if (k == 2)
 			{
-				histos_analitic[1]->Scale(1./(0.3*0.3)); // quadratic scaling relation (pure BSM term)
-				histos_analitic[2]->Scale(1/0.3);        // linear scaling relation (interference term)   
+				histos_analitic[1]->Scale(0.3*0.3/(0.1*0.1)); // quadratic scaling relation (pure BSM term)
+				histos_analitic[2]->Scale(0.3/0.1);        // linear scaling relation (interference term)   
 			}
-
+			else if (k == 3)
+			{
+				histos_analitic[1]->Scale(0.4*0.4/(0.3*0.3)); // quadratic scaling relation (pure BSM term)
+				histos_analitic[2]->Scale(0.4/0.3);        // linear scaling relation (interference term)   
+			}
+			else if (k == 4)
+			{
+				histos_analitic[1]->Scale(1/(0.4*0.4)); // quadratic scaling relation (pure BSM term)
+				histos_analitic[2]->Scale(1/0.4);        // linear scaling relation (interference term)   
+			}
 			TH1F* histo_sum = new TH1F(*histos[0]);
 			histo_sum->Add(histos[1]); 
 			histo_sum->Add(histos[2]);
@@ -130,20 +141,37 @@ int main (int argc, char** argv)
 
 			TH1F* compare = new TH1F(*histo_sum - *histo_sum_analitic);
 			
-			cnv->cd(k);
+			if (k == 1 || k == 2)
+			{			
+				cnv->cd(k);
+			}
+			else if (k == 3 || k == 4)
+			{
+				cnv2->cd(k-2);
+			}
 		
 			compare->Draw();
 			compare->GetXaxis()->SetTitle(kinetic_variable);
 			compare->GetYaxis()->SetTitle("difference between events");
 
-			cnv->Modified();
-			cnv->Update();
+			if (k == 1 || k == 2)
+			{			
+				cnv->Modified();
+				cnv->Update();
+			}
+			else if (k == 3 || k == 4)
+			{
+				cnv2->Modified();
+				cnv2->Update();
+			}
 		}
 		histos.clear();
 	}
 
-	string name_png = string(kinetic_variable) + "_compare.png";
-	cnv->Print(name_png.c_str(),"png");
+	string name1_png = string(kinetic_variable) + "_1_compare.png";
+	string name2_png = string(kinetic_variable) + "_2_compare.png";
+	cnv->Print(name1_png.c_str(),"png");
+	cnv2->Print(name2_png.c_str(),"png");
 
 	myapp->Run();
 

@@ -1,6 +1,6 @@
 /*
-Plot of 'kinetic_variable' distribution for cW = 0.1, 0.3, 1. The first distribution is
-plotted with data stored in ntuples, the other two are created using scaling relations 
+Plot of 'kinetic_variable' distribution for cW = 0.05, 0.1, 0.3, 0.4, 1. The first distribution 
+is plotted with data stored in ntuples, the others are created using scaling relations 
 (quadratic for the pure BSM term and linear for the interference one).
 
 c++ -o plot_analitic plot_analitic.cpp `root-config --glibs --cflags`
@@ -39,13 +39,19 @@ int main (int argc, char** argv)
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
 	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1200,400);
+	TCanvas* cnv2 = new TCanvas("cnv2","cnv2",0,0,1000,400);
+	TCanvas* cnv2_logy = new TCanvas("cnv2_logy","cnv2_logy",0,450,1000,400);
+		
 	cnv->Divide(3,1);
 	cnv_logy->Divide(3,1);
+	cnv2->Divide(2,1);
+	cnv2_logy->Divide(2,1);
 
-	string titles[] = {"cW = 0.1", "cW = 0.3 (scaling relations)", "cW = 1 (scaling relations)"};
-	string name_files[] = {"ntuple_SMlimit.root", "ntuple_RcW_0p1.root","ntuple_RcW_0p1.root"};
-	string name_ntuples[] = {"SSeu_SMlimit","SSeu_RcW_bsm_0p1","SSeu_RcW_int_0p1"};
-	string name_global_numbers[] = {"SSeu_SMlimit_nums", "SSeu_RcW_bsm_0p1_nums","SSeu_RcW_int_0p1_nums"};
+	string titles[] = {"cW = 0.05", "cW = 0.1 (scaling relations)", "cW = 0.3 (scaling relations)", 
+		"cW = 0.4 (scaling relations)", "cW = 1 (scaling relations)"};
+	string name_files[] = {"ntuple_SMlimit.root", "ntuple_RcW_0p05.root", "ntuple_RcW_0p05.root"};
+	string name_ntuples[] = {"SSeu_SMlimit","SSeu_RcW_bsm_0p05","SSeu_RcW_int_0p05"};
+	string name_global_numbers[] = {"SSeu_SMlimit_nums", "SSeu_RcW_bsm_0p05_nums","SSeu_RcW_int_0p05_nums"};
 	string name_histograms[] = {"SM", "BSM", "interference"};
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
 
@@ -98,19 +104,29 @@ int main (int argc, char** argv)
 		weights[j].clear();
 	}
 
-	for (int k = 0; k < 3; k++) // cW = 0.1, 0.3, 1
+	for (int k = 0; k < 5; k++) // cW = 0.05, 0.1, 0.3, 0.4, 1
 	{ 
 		THStack* h_stack = new THStack("hs","");
 		
 		if (k == 1) 
 		{
-			histos[1]->Scale(0.3*0.3/(0.1*0.1)); // quadratic scaling relation
-			histos[2]->Scale(0.3/0.1);           // linear scaling relation
+			histos[1]->Scale(0.1*0.1/(0.05*0.05)); // quadratic scaling relation
+			histos[2]->Scale(0.1/0.05);           // linear scaling relation
 		}
 		else if (k == 2)
 		{
-			histos[1]->Scale(1*1/(0.3*0.3)); // quadratic scaling relation
-			histos[2]->Scale(1/0.3);	 // linear scaling relation
+			histos[1]->Scale(0.3*0.3/(0.1*0.1)); // quadratic scaling relation
+			histos[2]->Scale(0.3/0.1);	 // linear scaling relation
+		}
+		else if (k == 3)
+		{
+			histos[1]->Scale(0.4*0.4/(0.3*0.3)); // quadratic scaling relation
+			histos[2]->Scale(0.4/0.3);	 // linear scaling relation
+		}
+		else if (k == 4)
+		{
+			histos[1]->Scale(1/(0.4*0.4)); // quadratic scaling relation
+			histos[2]->Scale(1/0.4);	 // linear scaling relation
 		}
 	
 		histos[0]->SetLineColor(kBlue);
@@ -130,7 +146,8 @@ int main (int argc, char** argv)
 		//histo_sum->SetLineWidth(2);
 		h_stack->Add(histo_sum);
 		
-		cnv->cd(k+1);
+		if (k < 3) cnv->cd(k+1);
+		else cnv2->cd(k-2);
 
 		h_stack->Draw("HIST NOSTACK");
 		TText* T = new TText(); 
@@ -141,10 +158,19 @@ int main (int argc, char** argv)
 		h_stack->GetYaxis()->SetTitle("# events"); 
 		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
 			
-		cnv->Modified();
-		cnv->Update();	
+		if (k < 3) 
+		{
+			cnv->Modified();
+			cnv->Update();
+		}
+		else	
+		{
+			cnv2->Modified();
+			cnv2->Update();
+		}
 
-		cnv_logy->cd(k+1); // logarithmic plot
+		if (k < 3) cnv_logy->cd(k+1); //logarithmic plot
+		else cnv2_logy->cd(k-2);
 		
 		h_stack->Draw("HIST NOSTACK");
 		TText* T_logy = new TText(); 
@@ -157,16 +183,28 @@ int main (int argc, char** argv)
 		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
 		gPad->SetLogy();
 
-		cnv_logy->Modified();
-		cnv_logy->Update();
+		if (k < 3) 
+		{
+			cnv_logy->Modified();
+			cnv_logy->Update();
+		}
+		else	
+		{
+			cnv2_logy->Modified();
+			cnv2_logy->Update();
+		}
 	
 		histos.clear();
 	}
 	//To save the plots
-	/*string name_png = string(kinetic_variable) + "_analitic.png";
-	string name_logy_png = string(kinetic_variable) + "_analitic_log.png";
-	cnv->Print(name_png.c_str(), "png");
-	cnv_logy->Print(name_logy_png.c_str(), "png");*/
+	string name1_png = string(kinetic_variable) + "_1_analitic.png";
+	string name1_logy_png = string(kinetic_variable) + "_1_analitic_log.png";
+	string name2_png = string(kinetic_variable) + "_2_analitic.png";
+	string name2_logy_png = string(kinetic_variable) + "_2_analitic_log.png";
+	cnv->Print(name1_png.c_str(), "png");
+	cnv_logy->Print(name1_logy_png.c_str(), "png");
+	cnv2->Print(name2_png.c_str(), "png");
+	cnv2_logy->Print(name2_logy_png.c_str(), "png");
 
 	myapp->Run();
 
