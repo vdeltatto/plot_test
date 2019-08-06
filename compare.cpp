@@ -1,4 +1,6 @@
 /*
+Plot of the differences between the distributions obtained with scaling relations and with data stored in ntuples
+
 c++ -o compare compare.cpp `root-config --glibs --cflags`
 */
 

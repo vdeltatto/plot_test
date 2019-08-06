@@ -1,6 +1,6 @@
 /*
-Plot of 'kinetic_variable' distribution for cW = 0.05, 0.1, 0.3, 0.4, 1. The first distribution 
-is plotted with data stored in ntuples, the others are created using scaling relations 
+Plot of 'kinetic_variable' distribution for cW = 0.05, 0.1, 0.3, 0.4, 1. The distribution 
+with cW = 0.3 is plotted with data stored in ntuples, the others are created using scaling relations 
 (quadratic for the pure BSM term and linear for the interference one).
 
 c++ -o plot_analitic plot_analitic.cpp `root-config --glibs --cflags`
@@ -70,7 +70,7 @@ int main (int argc, char** argv)
 		}
 	}	
 		
-	for (int j = 0; j < 3; j++) // SM simulation, BSM (quadratic term), BSM (interference term) for cW = 0.1
+	for (int j = 0; j < 3; j++) // SM simulation, BSM (quadratic term), BSM (interference term)
 	{
 		TFile* myfile = new TFile(name_files[j].c_str());
 		TTreeReader reader (name_ntuples[j].c_str(), myfile);

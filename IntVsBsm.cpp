@@ -1,5 +1,5 @@
 /*
-Plot of 'kinetic_variable' distributions for cW = 0.05, 0.1, 0.3(HS), 0.4, 1 (with data stored in ntuples)
+Comparison of SM vs SM + BSM and SM vs SM + inf for cW = 0.05, 0.1, 0.3(HS), 0.4, 1 (with data stored in ntuples)
 
 c++ -o IntVsBsm IntVsBsm.cpp `root-config --glibs --cflags`
 */
