@@ -36,11 +36,11 @@ int main (int argc, char** argv)
 	cnv->Divide(2,1);
 	cnv2->Divide(2,1);
 
-	string wilson_values[] = {"0p05","0p1","0p3","0p4","1"};
-	string titles[] = {"cW = 0.05", "cW = 0.1 (data - expected_values_from_scaling_relations)", 
-		"cW = 0.3 (data - expected_values_from_scaling_relations)", "cW = 0.4 (data - expected_values_from_scaling_relations)",
+	string wilson_values[] = {"0p3","0p05","0p1","0p4","1"};
+	string titles[] = {"cW = 0.3", "cW = 0.05 (data - expected_values_from_scaling_relations)", 
+		"cW = 0.1 (data - expected_values_from_scaling_relations)", "cW = 0.4 (data - expected_values_from_scaling_relations)",
 		"cW = 1 (data - expected_values_from_scaling_relations)"};
-	string words[] = {"ntuple_RcW_",".root","SSeu_RcW_bsm_","SSeu_RcW_int_","_nums"};
+	string words[] = {"ntuple_RcW_",".root","SSeu_RcW_bsm_","SSeu_RcW_int_","_nums","_HS.root"};
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
 	
 	vector<TH1F*> histos, histos_analitic;
@@ -57,8 +57,21 @@ int main (int argc, char** argv)
 
 	for (int k = 0; k < 5; k++) // cW = 0.05, 0.1, 0.3, 0.4, 1. 
 	{
-		string name_files[] = {"ntuple_SMlimit.root", words[0] + wilson_values[k] + words[1],
-			words[0] + wilson_values[k] + words[1]};
+		string name_files[3];
+		if (k != 0) //for cW = 0.3 high statistics (HS)
+		{
+			name_files[0] = "ntuple_SMlimit_HS.root";
+			name_files[1] = words[0] + wilson_values[k] + words[1];
+			name_files[2] = words[0] + wilson_values[k] + words[1];
+		}
+		else 
+		{
+			name_files[0] = "ntuple_SMlimit_HS.root";
+			name_files[1] = words[0] + wilson_values[k] + words[5];
+			name_files[2] = words[0] + wilson_values[k] + words[5];
+		}
+		//string name_files[] = {"ntuple_SMlimit_HS.root", words[0] + wilson_values[k] + words[1],
+			//words[0] + wilson_values[k] + words[1]};
 		string name_ntuples[] = {"SSeu_SMlimit", words[2] + wilson_values[k], 
 			words[3] + wilson_values[k]};
 		string name_global_numbers[] = {"SSeu_SMlimit_nums", words[2] + wilson_values[k] + words[4],
@@ -109,18 +122,18 @@ int main (int argc, char** argv)
 		{
 			if (k == 1)
 			{
-				histos_analitic[1]->Scale(0.1*0.1/(0.05*0.05)); // quadratic scaling relation (pure BSM term)
-				histos_analitic[2]->Scale(0.1/0.05);           // linear scaling relation (interference term)
+				histos_analitic[1]->Scale(0.05*0.05/(0.3*0.3)); // quadratic scaling relation (pure BSM term)
+				histos_analitic[2]->Scale(0.05/0.3);           // linear scaling relation (interference term)
 			}
 			else if (k == 2)
 			{
-				histos_analitic[1]->Scale(0.3*0.3/(0.1*0.1)); // quadratic scaling relation (pure BSM term)
-				histos_analitic[2]->Scale(0.3/0.1);        // linear scaling relation (interference term)   
+				histos_analitic[1]->Scale(0.1*0.1/(0.05*0.05)); // quadratic scaling relation (pure BSM term)
+				histos_analitic[2]->Scale(0.1/0.05);        // linear scaling relation (interference term)   
 			}
 			else if (k == 3)
 			{
-				histos_analitic[1]->Scale(0.4*0.4/(0.3*0.3)); // quadratic scaling relation (pure BSM term)
-				histos_analitic[2]->Scale(0.4/0.3);        // linear scaling relation (interference term)   
+				histos_analitic[1]->Scale(0.4*0.4/(0.1*0.1)); // quadratic scaling relation (pure BSM term)
+				histos_analitic[2]->Scale(0.4/0.1);        // linear scaling relation (interference term)   
 			}
 			else if (k == 4)
 			{

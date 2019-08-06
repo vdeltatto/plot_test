@@ -37,21 +37,21 @@ int main (int argc, char** argv)
 	}
 		
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
-	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
-	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1200,400);
+	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1000,400);
+	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1000,400);
 	TCanvas* cnv2 = new TCanvas("cnv2","cnv2",0,0,1000,400);
 	TCanvas* cnv2_logy = new TCanvas("cnv2_logy","cnv2_logy",0,450,1000,400);
 		
-	cnv->Divide(3,1);
-	cnv_logy->Divide(3,1);
+	cnv->Divide(2,1);
+	cnv_logy->Divide(2,1);
 	cnv2->Divide(2,1);
 	cnv2_logy->Divide(2,1);
 
-	string titles[] = {"cW = 0.05", "cW = 0.1 (scaling relations)", "cW = 0.3 (scaling relations)", 
+	string titles[] = {"cW = 0.3", "cW = 0.05 (scaling relations)", "cW = 0.1 (scaling relations)", 
 		"cW = 0.4 (scaling relations)", "cW = 1 (scaling relations)"};
-	string name_files[] = {"ntuple_SMlimit.root", "ntuple_RcW_0p05.root", "ntuple_RcW_0p05.root"};
-	string name_ntuples[] = {"SSeu_SMlimit","SSeu_RcW_bsm_0p05","SSeu_RcW_int_0p05"};
-	string name_global_numbers[] = {"SSeu_SMlimit_nums", "SSeu_RcW_bsm_0p05_nums","SSeu_RcW_int_0p05_nums"};
+	string name_files[] = {"ntuple_SMlimit_HS.root", "ntuple_RcW_0p3_HS.root", "ntuple_RcW_0p3_HS.root"};
+	string name_ntuples[] = {"SSeu_SMlimit","SSeu_RcW_bsm_0p3","SSeu_RcW_int_0p3"};
+	string name_global_numbers[] = {"SSeu_SMlimit_nums", "SSeu_RcW_bsm_0p3_nums","SSeu_RcW_int_0p3_nums"};
 	string name_histograms[] = {"SM", "BSM", "interference"};
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
 
@@ -60,7 +60,7 @@ int main (int argc, char** argv)
 	vector<float> weights[3];
 
 	float max_tot;
-	float maxima[] = {1300, 7000, 3000, 2100, 1200};
+	float maxima[] = {800, 6000, 1500, 1000, 400};
 	for (int i = 0; i < 5; i++) 	
 	{
 		if (kinetic_variable == kinetic_variables[i])
@@ -104,24 +104,24 @@ int main (int argc, char** argv)
 		weights[j].clear();
 	}
 
-	for (int k = 0; k < 5; k++) // cW = 0.05, 0.1, 0.3, 0.4, 1
+	for (int k = 1; k < 5; k++) // cW = 0.05, 0.1, 0.3, 0.4, 1
 	{ 
 		THStack* h_stack = new THStack("hs","");
 		
 		if (k == 1) 
 		{
-			histos[1]->Scale(0.1*0.1/(0.05*0.05)); // quadratic scaling relation
-			histos[2]->Scale(0.1/0.05);           // linear scaling relation
+			histos[1]->Scale(0.05*0.05/(0.3*0.3)); // quadratic scaling relation
+			histos[2]->Scale(0.05/0.3);           // linear scaling relation
 		}
 		else if (k == 2)
 		{
-			histos[1]->Scale(0.3*0.3/(0.1*0.1)); // quadratic scaling relation
-			histos[2]->Scale(0.3/0.1);	 // linear scaling relation
+			histos[1]->Scale(0.1*0.1/(0.05*0.05)); // quadratic scaling relation
+			histos[2]->Scale(0.1/0.05);	 // linear scaling relation
 		}
 		else if (k == 3)
 		{
-			histos[1]->Scale(0.4*0.4/(0.3*0.3)); // quadratic scaling relation
-			histos[2]->Scale(0.4/0.3);	 // linear scaling relation
+			histos[1]->Scale(0.4*0.4/(0.1*0.1)); // quadratic scaling relation
+			histos[2]->Scale(0.4/0.1);	 // linear scaling relation
 		}
 		else if (k == 4)
 		{
@@ -146,7 +146,7 @@ int main (int argc, char** argv)
 		//histo_sum->SetLineWidth(2);
 		h_stack->Add(histo_sum);
 		
-		if (k < 3) cnv->cd(k+1);
+		if (k < 3) cnv->cd(k);
 		else cnv2->cd(k-2);
 
 		h_stack->Draw("HIST NOSTACK");
@@ -169,7 +169,7 @@ int main (int argc, char** argv)
 			cnv2->Update();
 		}
 
-		if (k < 3) cnv_logy->cd(k+1); //logarithmic plot
+		if (k < 3) cnv_logy->cd(k); //logarithmic plot
 		else cnv2_logy->cd(k-2);
 		
 		h_stack->Draw("HIST NOSTACK");
@@ -197,14 +197,14 @@ int main (int argc, char** argv)
 		histos.clear();
 	}
 	//To save the plots
-	string name1_png = string(kinetic_variable) + "_1_analitic.png";
+	/*string name1_png = string(kinetic_variable) + "_1_analitic.png";
 	string name1_logy_png = string(kinetic_variable) + "_1_analitic_log.png";
 	string name2_png = string(kinetic_variable) + "_2_analitic.png";
 	string name2_logy_png = string(kinetic_variable) + "_2_analitic_log.png";
 	cnv->Print(name1_png.c_str(), "png");
 	cnv_logy->Print(name1_logy_png.c_str(), "png");
 	cnv2->Print(name2_png.c_str(), "png");
-	cnv2_logy->Print(name2_logy_png.c_str(), "png");
+	cnv2_logy->Print(name2_logy_png.c_str(), "png");*/
 
 	myapp->Run();
 

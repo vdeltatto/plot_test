@@ -1,7 +1,7 @@
 /*
 Plot of 'kinetic_variable' distributions for cW = 0.05, 0.1, 0.3(HS), 0.4, 1 (with data stored in ntuples)
 
-c++ -o plot_tot plot_tot.cpp `root-config --glibs --cflags`
+c++ -o IntVsBsm IntVsBsm.cpp `root-config --glibs --cflags`
 */
 
 #include <iostream>
@@ -25,26 +25,28 @@ using namespace std ;
 int main (int argc, char** argv) 
 {
 	const char* kinetic_variable; //possible variables: met, mjj, mll, ptl1, ptl2
+	int want_log = 0;
+	string input_log = "log";
 	if (argc == 1) 
 	{
 		kinetic_variable = "met";
 	}
 	else 
 	{
-		kinetic_variable = argv[1];
+		kinetic_variable = argv[1];	
+	}
+	if (argc > 2 && argv[2] == input_log)
+	{
+		want_log = 1;
 	}
 		
+		
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
-	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
-	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1200,400);
-	TCanvas* cnv2 = new TCanvas("cnv2","cnv2",0,0,1000,400);
-	TCanvas* cnv2_logy = new TCanvas("cnv2_logy","cnv2_logy",0,450,1000,400);
-	TCanvas* zoom = new TCanvas("zoom","zoom",0,0, 1000, 500);
+	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,800);
+	TCanvas* cnv2 = new TCanvas("cnv2","cnv2",0,0,1000,800);
 
-	cnv->Divide(3,1);
-	cnv_logy->Divide(3,1);
-	cnv2->Divide(2,1);
-	cnv2_logy->Divide(2,1);
+	cnv->Divide(3,2);
+	cnv2->Divide(2,2);
 
 	string wilson_values[] = {"0p05","0p1","0p3","0p4","1"};
 	string titles[] = {"cW = 0.05", "cW = 0.1", "cW = 0.3 (high statistics)","cW = 0.4", "cW = 1"};
@@ -90,9 +92,8 @@ int main (int argc, char** argv)
 
 		vector<float> values[3]; // to contain data of SM simulation, BSM (quadratic term), BSM (interference term)
 		vector<float> weights[3];
-		THStack* h_stack = new THStack("hs","");
-		THStack* h_stack_zoom = new THStack("hs_zoom","");
-		
+		THStack* h_stack_bsm = new THStack("hs_bsm","");
+		THStack* h_stack_int = new THStack("hs_int","");
 		
 		for (int j = 0; j < 3; j++) // j = 0,1,2: SM simulation, BSM (quadratic term), BSM (interference term)
 		{
@@ -131,45 +132,69 @@ int main (int argc, char** argv)
 			histo->Scale(normalization);
 			histos.push_back(histo);	
 
-			if (k == 2 && kinetic_variable == kinetic_variables[1]) //cW = 1, mjj
-			{
-				histo_zoom->Scale(normalization);
-				histos_zoom.push_back(histo_zoom);	
-			}	 
-
 			values[j].clear();
 			weights[j].clear();	
 		}
+		
+		int color_SM  = kGreen - 8 ;
+		int color_INT_BSM = kOrange - 4 ;
 
-		histos[0]->SetLineColor(kBlue);
+		histos[0]->SetFillColor(color_SM);
+		histos[1]->SetFillColor(color_INT_BSM);
+		histos[2]->SetFillColor(color_INT_BSM);
+
+		/*histos[0]->SetLineColor(kBlue);
 		histos[1]->SetLineColor(kRed);
-		histos[2]->SetLineColor(kGreen +1);
+		histos[2]->SetLineColor(kRed);
+		histos[0]->SetLineWidth(2);
+		histos[1]->SetLineWidth(2);
+		histos[2]->SetLineWidth(2);*/
+
+		histos[1]->SetTitle("SM + BSM");
+		histos[2]->SetTitle("SM + interference");
 		
-		for (int i = 0; i < 3; i++)
-		{
-			h_stack->Add(histos[i]);
-		}
+		h_stack_bsm->Add(histos[0]);
+		h_stack_bsm->Add(histos[1]);
+
+		h_stack_int->Add(histos[0]);
+		h_stack_int->Add(histos[2]);
 	
-		TH1F* histo_sum = new TH1F(*histos[0]);
-		histo_sum->Add(histos[1]);
-		histo_sum->Add(histos[2]);
-		histo_sum->SetTitle("SM + BSM + interference");
-		histo_sum->SetLineColor(kBlack);
-		//histo_sum->SetLineWidth(2);
-		h_stack->Add(histo_sum);
-		
 		if (k < 3) cnv->cd(k+1);
 		else cnv2->cd(k-2);
 		
-		h_stack->Draw("HIST NOSTACK");
-		TText* T = new TText(); 
-		T->SetTextFont(42); 
-		T->SetTextAlign(21);
-		T->DrawTextNDC(.5,.95,titles[k].c_str());
-		h_stack->GetXaxis()->SetTitle(kinetic_variable);
-		h_stack->GetYaxis()->SetTitle("# events"); 
+		h_stack_bsm->Draw("HIST");
+		TText* T_bsm = new TText(); 
+		T_bsm->SetTextFont(42); 
+		T_bsm->SetTextAlign(21);
+		h_stack_bsm->GetXaxis()->SetTitle(kinetic_variable);
+		h_stack_bsm->GetYaxis()->SetTitle("# events"); 
 		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
-		
+		if (want_log == 1) 
+		{
+			string title = titles[k] + " (logarithmic scale)";
+			T_bsm->DrawTextNDC(.5,.95,title.c_str());
+			gPad->SetLogy();
+		}
+		else T_bsm->DrawTextNDC(.5,.95,titles[k].c_str());
+
+		if (k < 3) cnv->cd(k+4);
+		else cnv2->cd(k);
+
+		h_stack_int->Draw("HIST");
+		TText* T_int = new TText(); 
+		T_int->SetTextFont(42); 
+		T_int->SetTextAlign(21);
+		h_stack_int->GetXaxis()->SetTitle(kinetic_variable);
+		h_stack_int->GetYaxis()->SetTitle("# events"); 
+		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
+		if (want_log == 1) 
+		{
+			string title = titles[k] + " (logarithmic scale)";
+			T_int->DrawTextNDC(.5,.95,title.c_str());
+			gPad->SetLogy();
+		}
+		else T_int->DrawTextNDC(.5,.95,titles[k].c_str());
+
 		if (k < 3) 
 		{
 			cnv->Modified();
@@ -180,94 +205,26 @@ int main (int argc, char** argv)
 			cnv2->Modified();
 			cnv2->Update();
 		}
-
-		if (k < 3) cnv_logy->cd(k+1); //logarithmic plot
-		else cnv2_logy->cd(k-2);
-		
-		h_stack->Draw("HIST NOSTACK");
-		TText* T_logy = new TText(); 
-		T_logy->SetTextFont(42); 
-		T_logy->SetTextAlign(21);
-		string title = titles[k] + " (logarithmic scale)";
-		T_logy->DrawTextNDC(.5,.95,title.c_str());
-		h_stack->GetXaxis()->SetTitle(kinetic_variable);
-		h_stack->GetYaxis()->SetTitle("# events"); 
-		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
-		gPad->SetLogy();
-	
-		if (k < 3) 
-		{
-			cnv_logy->Modified();
-			cnv_logy->Update();
-		}
-		else	
-		{
-			cnv2_logy->Modified();
-			cnv2_logy->Update();
-		}
 			
 		histos.clear();		
 	
-		if (k == 4 && kinetic_variable == kinetic_variables[1]) // zoom in the range with singularity
-		{						 	// for cW = 1
-			int color_SM  = kGreen - 8 ;
-			int color_INT = kOrange - 4 ;
-			int color_BSM = kAzure - 9 ;
-
-			histos_zoom[0]->SetFillColor(color_SM);
-			histos_zoom[1]->SetFillColor(color_INT);
-			histos_zoom[2]->SetFillColor(color_BSM);
-			
-			for (int i = 0; i < 3; i++)
-			{
-				h_stack_zoom->Add(histos_zoom[i]);
-			}
-			
-			zoom->Divide(2,1);
-			zoom->cd(1);
-		
-			h_stack_zoom->Draw("HIST NOSTACK");
-			TText* T = new TText(); 
-			T->SetTextFont(42); 
-			T->SetTextAlign(21);
-			T->DrawTextNDC(.5,.95,"zoom for cW = 1");
-			h_stack_zoom->GetXaxis()->SetTitle(kinetic_variable);
-			h_stack_zoom->GetYaxis()->SetTitle("# events"); 
-			gPad->BuildLegend(0.10,0.76,0.4,0.90,"");
-
-			zoom->Modified();
-			zoom->Update();	
-
-			zoom->cd(2);			
-			h_stack_zoom->Draw("HIST NOSTACK");
-			TText* T_logy = new TText(); 
-			T_logy->SetTextFont(42); 
-			T_logy->SetTextAlign(21);
-			T_logy->DrawTextNDC(.5,.95,"zoom for cW = 1 (log scale)");
-			h_stack_zoom->GetXaxis()->SetTitle(kinetic_variable);
-			h_stack_zoom->GetYaxis()->SetTitle("# events"); 
-			gPad->BuildLegend(0.10,0.76,0.4,0.90,"");
-			gPad->SetLogy();
-
-			zoom->Modified();
-			zoom->Update();	
-
-		}
-		else if (k == 4)
-		{
-			zoom->Close();
-		}
 	}
 	//To save the plots
-	string name1_png = string(kinetic_variable) + "_1.png";
-	string name1_logy_png = string(kinetic_variable) + "_1_log.png";
-	string name2_png = string(kinetic_variable) + "_2.png";
-	string name2_logy_png = string(kinetic_variable) + "_2_log.png";
+	string name1_png; string name2_png;
+	if (want_log != 1)
+	{
+		name1_png = string(kinetic_variable) + "_IntBsm_1.png";
+		name2_png = string(kinetic_variable) + "_IntBsm_2.png";
+		//cout << name2_png << endl;
+	}
+	else 
+	{
+		name1_png = string(kinetic_variable) + "_IntBsm_1_log.png";
+		name2_png = string(kinetic_variable) + "_IntBsm_2_log.png";
+	}
+	
 	cnv->Print(name1_png.c_str(), "png");
-	cnv_logy->Print(name1_logy_png.c_str(), "png");
 	cnv2->Print(name2_png.c_str(), "png");
-	cnv2_logy->Print(name2_logy_png.c_str(), "png");
-	if (kinetic_variable == kinetic_variables[1]) zoom->Print("zoom_mjj.png","png");
 
 	myapp->Run();
 
