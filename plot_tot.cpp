@@ -22,6 +22,7 @@ c++ -o plot_tot plot_tot.cpp `root-config --glibs --cflags`
 
 using namespace std ;
 
+
 int main (int argc, char** argv) 
 {
 	const char* kinetic_variable; //possible variables: met, mjj, mll, ptl1, ptl2
@@ -34,6 +35,7 @@ int main (int argc, char** argv)
 		kinetic_variable = argv[1];
 	}
 		
+	TH1::SetDefaultSumw2();
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
 	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1200,400);
@@ -46,9 +48,8 @@ int main (int argc, char** argv)
 	cnv2->Divide(2,1);
 	cnv2_logy->Divide(2,1);
 
-	string wilson_values[] = {"0p05","0p1","0p3","0p4","1"};
+	string cW[] = {"0p05","0p1","0p3","0p4","1"};
 	string titles[] = {"cW = 0.05", "cW = 0.1", "cW = 0.3 (high statistics)","cW = 0.4", "cW = 1"};
-	string words[] = {"ntuple_RcW_",".root","SSeu_RcW_bsm_","SSeu_RcW_int_","_nums","_HS.root"};
 	string name_histograms[] = {"SM", "BSM", "interference"};
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
 	
@@ -56,14 +57,22 @@ int main (int argc, char** argv)
 	vector<TH1F*> histos_zoom; //to zoom the critical part of mjj distributon (cW = 1)
 	
 	float max_tot[5];
-	float maxima[][5] = {{700, 6000, 900, 600, 250},{700, 6000, 900, 600, 250},
-		{800, 6000, 1500, 1000, 400},{1000, 6000, 1750, 1300, 500},
-		{1500, 6000, 3000, 1900, 1000}}; //maxima in the histograms
+	float maxima[][5] = {{450, 9000, 900, 600, 250},{600, 9000, 900, 600, 250},
+		{600, 9000, 1500, 800, 300},{700, 9000, 1300, 1100, 500},
+		{1000, 9000, 2200, 1900, 750}}; //maxima in the histograms
+	float RMS_array[5] = {87.1868, 952.47, 115.707, 70.3347, 31.2509}; //for every kinetic_variable, same for different cWs
+	int Nbins_array[5];
+
 	for (int i = 0; i < 5; i++) 	
 	{
 		if (kinetic_variable == kinetic_variables[i])
 		{
-			for (int n = 0; n < 5; n++) max_tot[n] = maxima[n][i];	
+			for (int j = 0; j < 5; j++) 
+				{
+					max_tot[j] = maxima[j][i];	
+					Nbins_array[j] = floor(max_tot[j]/((1./3.)*RMS_array[i]));
+					//cout << Nbins_array[j] << endl;
+				}					
 			break;
 		}
 	}	
@@ -74,25 +83,23 @@ int main (int argc, char** argv)
 		if (k != 2) //for cW = 0.3 high statistics (HS)
 		{
 			name_files[0] = "ntuple_SMlimit_HS.root";
-			name_files[1] = words[0] + wilson_values[k] + words[1];
-			name_files[2] = words[0] + wilson_values[k] + words[1];
+			name_files[1] = "ntuple_RcW_" + cW[k] + ".root";
+			name_files[2] = "ntuple_RcW_" + cW[k] + ".root";
 		}
 		else 
 		{
 			name_files[0] = "ntuple_SMlimit_HS.root";
-			name_files[1] = words[0] + wilson_values[k] + words[5];
-			name_files[2] = words[0] + wilson_values[k] + words[5];
+			name_files[1] = "ntuple_RcW_" + cW[k] + "_HS.root";
+			name_files[2] = "ntuple_RcW_" + cW[k] + "_HS.root";
 		}
-		string name_ntuples[] = {"SSeu_SMlimit", words[2] + wilson_values[k], 
-			words[3] + wilson_values[k]};
-		string name_global_numbers[] = {"SSeu_SMlimit_nums", words[2] + wilson_values[k] + words[4],
-			words[3] + wilson_values[k] + words[4]};
+		string name_ntuples[] = {"SSeu_SMlimit", "SSeu_RcW_bsm_" + cW[k], "SSeu_RcW_int_" + cW[k]};
+		string name_global_numbers[] = {"SSeu_SMlimit_nums", "SSeu_RcW_bsm_"+ cW[k] +"_nums", "SSeu_RcW_int_" + cW[k] + "_nums"};
+
 
 		vector<float> values[3]; // to contain data of SM simulation, BSM (quadratic term), BSM (interference term)
 		vector<float> weights[3];
 		THStack* h_stack = new THStack("hs","");
 		THStack* h_stack_zoom = new THStack("hs_zoom","");
-		
 		
 		for (int j = 0; j < 3; j++) // j = 0,1,2: SM simulation, BSM (quadratic term), BSM (interference term)
 		{
@@ -107,10 +114,8 @@ int main (int argc, char** argv)
 				weights[j].push_back(*var2);
 			}		
 			
-			int Nbins = 70;
-			
-			TH1F* histo = new TH1F ("histo", name_histograms[j].c_str(), Nbins, 0., max_tot[k]);
-			TH1F* histo_zoom = new TH1F ("histo_zoom", name_histograms[j].c_str(), 100, 70, 90);			
+			TH1F* histo = new TH1F ("histo", name_histograms[j].c_str(), Nbins_array[k], 0., max_tot[k]);
+			TH1F* histo_zoom = new TH1F ("histo_zoom", name_histograms[j].c_str(), 41, 70, 90);			
 				
 			TH1F* global_numbers = (TH1F*) myfile->Get(name_global_numbers[j].c_str()) ;
 			float cross_section = global_numbers->GetBinContent(1);
@@ -129,6 +134,7 @@ int main (int argc, char** argv)
 			}
 
 			histo->Scale(normalization);
+
 			histos.push_back(histo);	
 
 			if (k == 2 && kinetic_variable == kinetic_variables[1]) //cW = 1, mjj
@@ -145,17 +151,17 @@ int main (int argc, char** argv)
 		histos[1]->SetLineColor(kRed);
 		histos[2]->SetLineColor(kGreen +1);
 		
-		for (int i = 0; i < 3; i++)
-		{
-			h_stack->Add(histos[i]);
-		}
-	
 		TH1F* histo_sum = new TH1F(*histos[0]);
 		histo_sum->Add(histos[1]);
 		histo_sum->Add(histos[2]);
 		histo_sum->SetTitle("SM + BSM + interference");
 		histo_sum->SetLineColor(kBlack);
-		//histo_sum->SetLineWidth(2);
+
+		for (int i = 0; i < 3; i++)
+		{
+			h_stack->Add(histos[i]);
+		}	
+
 		h_stack->Add(histo_sum);
 		
 		if (k < 3) cnv->cd(k+1);
@@ -166,7 +172,8 @@ int main (int argc, char** argv)
 		T->SetTextFont(42); 
 		T->SetTextAlign(21);
 		T->DrawTextNDC(.5,.95,titles[k].c_str());
-		h_stack->GetXaxis()->SetTitle(kinetic_variable);
+		string xlabel = string(kinetic_variable) + string(" (GeV)");
+		h_stack->GetXaxis()->SetTitle(xlabel.c_str());
 		h_stack->GetYaxis()->SetTitle("# events"); 
 		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
 		
@@ -190,7 +197,7 @@ int main (int argc, char** argv)
 		T_logy->SetTextAlign(21);
 		string title = titles[k] + " (logarithmic scale)";
 		T_logy->DrawTextNDC(.5,.95,title.c_str());
-		h_stack->GetXaxis()->SetTitle(kinetic_variable);
+		h_stack->GetXaxis()->SetTitle(xlabel.c_str());
 		h_stack->GetYaxis()->SetTitle("# events"); 
 		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
 		gPad->SetLogy();
@@ -231,7 +238,7 @@ int main (int argc, char** argv)
 			T->SetTextFont(42); 
 			T->SetTextAlign(21);
 			T->DrawTextNDC(.5,.95,"zoom for cW = 1");
-			h_stack_zoom->GetXaxis()->SetTitle(kinetic_variable);
+			h_stack_zoom->GetXaxis()->SetTitle(xlabel.c_str());
 			h_stack_zoom->GetYaxis()->SetTitle("# events"); 
 			gPad->BuildLegend(0.10,0.76,0.4,0.90,"");
 
@@ -244,7 +251,7 @@ int main (int argc, char** argv)
 			T_logy->SetTextFont(42); 
 			T_logy->SetTextAlign(21);
 			T_logy->DrawTextNDC(.5,.95,"zoom for cW = 1 (log scale)");
-			h_stack_zoom->GetXaxis()->SetTitle(kinetic_variable);
+			h_stack_zoom->GetXaxis()->SetTitle(xlabel.c_str());
 			h_stack_zoom->GetYaxis()->SetTitle("# events"); 
 			gPad->BuildLegend(0.10,0.76,0.4,0.90,"");
 			gPad->SetLogy();
@@ -274,4 +281,3 @@ int main (int argc, char** argv)
 	return 0;
 
 }
-

@@ -32,30 +32,38 @@ int main (int argc, char** argv)
 		kinetic_variable = argv[1];
 	}
 		
+	TH1::SetDefaultSumw2();
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1000,400);
 	TCanvas* cnv2 = new TCanvas("cnv2","cnv2",0,450,1000,400);
 	cnv->Divide(2,1);
 	cnv2->Divide(2,1);
 
-	string wilson_values[] = {"0p3","0p05","0p1","0p4","1"};
+	string cW[] = {"0p3","0p05","0p1","0p4","1"};
 	string titles[] = {"cW = 0.3", "cW = 0.05 (data - expected_values_from_scaling_relations)", 
 		"cW = 0.1 (data - expected_values_from_scaling_relations)", "cW = 0.4 (data - expected_values_from_scaling_relations)",
 		"cW = 1 (data - expected_values_from_scaling_relations)"};
-	string words[] = {"ntuple_RcW_",".root","SSeu_RcW_bsm_","SSeu_RcW_int_","_nums","_HS.root"};
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
 	
 	vector<TH1F*> histos, histos_analitic;
 	float max;
-	float maxima[] = {3500, 8500, 7000, 4000, 3500};
+	//float maxima[] = {3500, 8500, 7000, 4000, 3500};
+	float maxima[] = {2000, 9000, 2200, 1900, 750};
+	float RMS_array[5] = {87.1868, 952.47, 115.707, 70.3347, 31.2509};
+	int Nbins;
+
 	for (int i = 0; i < 5; i++) 	
 	{
 		if (kinetic_variable == kinetic_variables[i])
 		{
-			max = maxima[i];	
+			max = maxima[i];
+			Nbins = floor(max/((1./3.)*RMS_array[i]));	
 			break;
 		}
 	}	
+
+	/*int Nbins_vector[5] = {84, 55, 55, 55, 41};*/
+	//int Nbins;
 
 	for (int k = 0; k < 5; k++) // cW = 0.05, 0.1, 0.3, 0.4, 1. 
 	{
@@ -63,23 +71,20 @@ int main (int argc, char** argv)
 		if (k != 0) //for cW = 0.3 high statistics (HS)
 		{
 			name_files[0] = "ntuple_SMlimit_HS.root";
-			name_files[1] = words[0] + wilson_values[k] + words[1];
-			name_files[2] = words[0] + wilson_values[k] + words[1];
+			name_files[1] = "ntuple_RcW_" + cW[k] + ".root";
+			name_files[2] = "ntuple_RcW_" + cW[k] + ".root";
 		}
 		else 
 		{
 			name_files[0] = "ntuple_SMlimit_HS.root";
-			name_files[1] = words[0] + wilson_values[k] + words[5];
-			name_files[2] = words[0] + wilson_values[k] + words[5];
+			name_files[1] = "ntuple_RcW_" + cW[k] + "_HS.root";
+			name_files[2] = "ntuple_RcW_" + cW[k] + "_HS.root";
 		}
-		//string name_files[] = {"ntuple_SMlimit_HS.root", words[0] + wilson_values[k] + words[1],
-			//words[0] + wilson_values[k] + words[1]};
-		string name_ntuples[] = {"SSeu_SMlimit", words[2] + wilson_values[k], 
-			words[3] + wilson_values[k]};
-		string name_global_numbers[] = {"SSeu_SMlimit_nums", words[2] + wilson_values[k] + words[4],
-			words[3] + wilson_values[k] + words[4]};
+
+		string name_ntuples[] = {"SSeu_SMlimit", "SSeu_RcW_bsm_" + cW[k], "SSeu_RcW_int_" + cW[k]};
+		string name_global_numbers[] = {"SSeu_SMlimit_nums", "SSeu_RcW_bsm_"+ cW[k] +"_nums", "SSeu_RcW_int_" + cW[k] + "_nums"};
 		vector<float> values;
-			vector<float> weights;
+		vector<float> weights;
 		
 		
 		for (int j = 0; j < 3; j++) // j = 0,1,2: SM simulation, BSM (quadratic term), BSM (interference term)
@@ -94,8 +99,6 @@ int main (int argc, char** argv)
 				values.push_back(*var1);
 				weights.push_back(*var2);
 			}		
-			
-			int Nbins = 100;
 
 			TH1F* histo = new TH1F ("histo", "histo", Nbins, 0, max);
 			
@@ -140,7 +143,7 @@ int main (int argc, char** argv)
 			else if (k == 4)
 			{
 				histos_analitic[1]->Scale(1/(0.4*0.4)); // quadratic scaling relation (pure BSM term)
-				histos_analitic[2]->Scale(1/0.4);        // linear scaling relation (interference term)   
+				histos_analitic[2]->Scale(1/0.4);        // linear scaling relation (interference term)  
 			}
 			TH1F* histo_sum = new TH1F(*histos[0]);
 			histo_sum->Add(histos[1]); 
@@ -166,7 +169,8 @@ int main (int argc, char** argv)
 			}
 		
 			compare->Draw();
-			compare->GetXaxis()->SetTitle(kinetic_variable);
+			string xlabel = string(kinetic_variable) + string(" (GeV)");
+			compare->GetXaxis()->SetTitle(xlabel.c_str());
 			compare->GetYaxis()->SetTitle("difference between events");
 
 			if (k == 1 || k == 2)

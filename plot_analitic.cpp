@@ -36,6 +36,7 @@ int main (int argc, char** argv)
 		kinetic_variable = argv[1];
 	}
 		
+	TH1::SetDefaultSumw2();
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1000,400);
 	TCanvas* cnv_logy = new TCanvas("cnv_logy","cnv_logy",0,450,1000,400);
@@ -60,15 +61,21 @@ int main (int argc, char** argv)
 	vector<float> weights[3];
 
 	float max_tot;
-	float maxima[] = {800, 6000, 1500, 1000, 400};
+	float maxima[] = {600, 9000, 1500, 800, 300}; 
+	//float maxima[] = {700, 6000, 1750, 1300, 500};
+	float RMS_array[5] = {87.1868, 952.47, 115.707, 70.3347, 31.2509};
+	int Nbins;
+	//int Nbins_vector[] = {28, 26, 37, 35, 40};
 	for (int i = 0; i < 5; i++) 	
 	{
 		if (kinetic_variable == kinetic_variables[i])
 		{
 			max_tot = maxima[i];	
+			Nbins = floor(max_tot/((1./3.)*RMS_array[i]));
 			break;
 		}
 	}	
+	
 		
 	for (int j = 0; j < 3; j++) // SM simulation, BSM (quadratic term), BSM (interference term)
 	{
@@ -83,7 +90,7 @@ int main (int argc, char** argv)
 			weights[j].push_back(*var2);
 		}		
 
-		int Nbins = 70;
+		//int Nbins = ;
 		TH1F* histo = new TH1F ("histo", name_histograms[j].c_str(), Nbins, 0., max_tot);
 		TH1F* global_numbers = (TH1F*) myfile->Get(name_global_numbers[j].c_str()) ;
 		float cross_section = global_numbers->GetBinContent(1);
@@ -154,7 +161,8 @@ int main (int argc, char** argv)
 		T->SetTextFont(42); 
 		T->SetTextAlign(21);
 		T->DrawTextNDC(.5,.95,titles[k].c_str());
-		h_stack->GetXaxis()->SetTitle(kinetic_variable);
+		string xlabel = string(kinetic_variable) + string(" (GeV)");
+		h_stack->GetXaxis()->SetTitle(xlabel.c_str());
 		h_stack->GetYaxis()->SetTitle("# events"); 
 		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
 			
@@ -178,7 +186,7 @@ int main (int argc, char** argv)
 		T_logy->SetTextAlign(21);
 		string title = titles[k] + " (logarithmic scale)";
 		T_logy->DrawTextNDC(.5,.95,title.c_str());
-		h_stack->GetXaxis()->SetTitle(kinetic_variable);
+		h_stack->GetXaxis()->SetTitle(xlabel.c_str());
 		h_stack->GetYaxis()->SetTitle("# events"); 
 		gPad->BuildLegend(0.40,0.70,0.90,0.90,"");
 		gPad->SetLogy();
@@ -197,14 +205,14 @@ int main (int argc, char** argv)
 		histos.clear();
 	}
 	//To save the plots
-	/*string name1_png = string(kinetic_variable) + "_1_analitic.png";
+	string name1_png = string(kinetic_variable) + "_1_analitic.png";
 	string name1_logy_png = string(kinetic_variable) + "_1_analitic_log.png";
 	string name2_png = string(kinetic_variable) + "_2_analitic.png";
 	string name2_logy_png = string(kinetic_variable) + "_2_analitic_log.png";
 	cnv->Print(name1_png.c_str(), "png");
 	cnv_logy->Print(name1_logy_png.c_str(), "png");
 	cnv2->Print(name2_png.c_str(), "png");
-	cnv2_logy->Print(name2_logy_png.c_str(), "png");*/
+	cnv2_logy->Print(name2_logy_png.c_str(), "png");
 
 	myapp->Run();
 
